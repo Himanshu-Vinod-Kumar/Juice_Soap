@@ -13,6 +13,7 @@ import { forkJoin, type Subscription } from 'rxjs'
 import { MatTableDataSource } from '@angular/material/table'
 import { MatDialog } from '@angular/material/dialog'
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser'
+import DOMPurify from 'dompurify'
 import { TranslateService, TranslateModule } from '@ngx-translate/core'
 import { SocketIoService } from '../Services/socket-io.service'
 import { SnackBarHelperService } from '../Services/snack-bar-helper.service'
@@ -156,7 +157,8 @@ export class SearchResultComponent implements OnDestroy, AfterViewInit {
         this.io.socket().emit('verifyLocalXssChallenge', queryParam)
       }) // vuln-code-snippet hide-end
       this.dataSource.filter = queryParam.toLowerCase()
-      this.searchValue = this.sanitizer.bypassSecurityTrustHtml(queryParam) // vuln-code-snippet vuln-line localXssChallenge xssBonusChallenge
+      const sanitizedQueryParam = DOMPurify.sanitize(queryParam)
+      this.searchValue = this.sanitizer.sanitize(1, sanitizedQueryParam) // Safe usage of sanitized input
       this.gridDataSource.subscribe((result: any) => {
         if (result.length === 0) {
           this.emptyState = true
