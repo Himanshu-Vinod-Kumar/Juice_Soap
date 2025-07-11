@@ -13,6 +13,7 @@ import helmet from 'helmet'
 import http from 'node:http'
 import path from 'node:path'
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import colors from 'colors/safe'
 import serveIndex from 'serve-index'
 import bodyParser from 'body-parser'
@@ -592,7 +593,13 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.put('/rest/continue-code/apply/:continueCode', restoreProgress.restoreProgress())
   app.get('/rest/captcha', captchas())
   app.get('/rest/image-captcha', imageCaptchas())
-  app.get('/rest/track-order/:id', trackOrder())
+  const trackOrderRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again later."
+  })
+
+  app.get('/rest/track-order/:id', trackOrderRateLimiter, trackOrder())
   app.get('/rest/country-mapping', countryMapping())
   app.get('/rest/saveLoginIp', saveLoginIp())
   app.post('/rest/user/data-export', security.appendUserId(), verifyImageCaptcha())
