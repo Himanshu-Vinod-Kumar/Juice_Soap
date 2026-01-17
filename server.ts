@@ -13,6 +13,7 @@ import helmet from 'helmet'
 import http from 'node:http'
 import path from 'node:path'
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import colors from 'colors/safe'
 import serveIndex from 'serve-index'
 import bodyParser from 'body-parser'
@@ -609,7 +610,13 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.get('/rest/chatbot/status', chatbot.status())
   app.post('/rest/chatbot/respond', chatbot.process())
   /* NoSQL API endpoints */
-  app.get('/rest/products/:id/reviews', showProductReviews())
+  // Apply rate limiter to this endpoint
+  const productReviewsRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // Limit each IP to 10 requests per windowMs
+    message: 'Too many requests, please try again later.'
+  });
+  app.get('/rest/products/:id/reviews', productReviewsRateLimiter, showProductReviews())
   app.put('/rest/products/:id/reviews', createProductReviews())
   app.patch('/rest/products/reviews', security.isAuthorized(), updateProductReviews())
   app.post('/rest/products/reviews', security.isAuthorized(), likeProductReviews())
